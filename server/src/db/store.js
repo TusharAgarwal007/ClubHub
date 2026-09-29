@@ -2,7 +2,9 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 
-const DATA_DIR = path.join(__dirname, '..', '..', 'data');
+const DATA_DIR = (process.env.VERCEL === '1' || process.env.AWS_LAMBDA_FUNCTION_NAME)
+  ? path.join('/tmp', 'clubhub_data')
+  : path.join(__dirname, '..', '..', 'data');
 const DATA_FILE = path.join(DATA_DIR, 'clubhub_data.json');
 
 function ensureDataFile() {

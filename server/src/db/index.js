@@ -5,26 +5,40 @@ const { Event, Registration, Winner, Admin } = require('./mongoose');
 
 let activeDb = 'store'; // 'store' or 'mongo'
 
+let dbInitPromise = null;
+
 async function initDb() {
-  if (config.MONGODB_URI) {
-    try {
-      console.log(`[DB] Attempting connection to MongoDB at ${config.MONGODB_URI}...`);
-      await mongoose.connect(config.MONGODB_URI, {
-        serverSelectionTimeoutMS: 2000,
-        connectTimeoutMS: 2000
-      });
-      activeDb = 'mongo';
-      console.log('[DB] Connected successfully to MongoDB!');
-      return;
-    } catch (err) {
-      console.warn(`[DB] MongoDB connection failed (${err.message}). Falling back to persistent local storage engine.`);
+  if (dbInitPromise) return dbInitPromise;
+
+  dbInitPromise = (async () => {
+    const mongoUri = config.MONGO_URI || config.MONGODB_URI;
+    const isCloudUri = mongoUri && !mongoUri.includes('localhost') && !mongoUri.includes('127.0.0.1');
+
+    if (mongoUri) {
+      try {
+        const maskedUri = mongoUri.replace(/\/\/([^:]+):([^@]+)@/, '//$1:****@');
+        console.log(`[DB] Attempting connection to MongoDB (${isCloudUri ? 'Cloud / Atlas' : 'Local'})...`);
+        console.log(`[DB] Target URI: ${maskedUri}`);
+
+        await mongoose.connect(mongoUri, {
+          serverSelectionTimeoutMS: 5000,
+          connectTimeoutMS: 5000
+        });
+        activeDb = 'mongo';
+        console.log('[DB] Connected successfully to MongoDB!');
+        return;
+      } catch (err) {
+        console.warn(`[DB] MongoDB connection failed (${err.message}). Falling back to persistent local storage engine.`);
+      }
+    } else {
+      console.log('[DB] No MONGO_URI provided. Using persistent local storage engine.');
     }
-  } else {
-    console.log('[DB] No MONGODB_URI provided. Using persistent local storage engine.');
-  }
-  activeDb = 'store';
-  store.readData(); // ensure file created
-  console.log('[DB] Local persistent storage initialized (server/data/clubhub_data.json)');
+    activeDb = 'store';
+    store.readData(); // ensure storage initialized
+    console.log('[DB] Local persistent storage initialized.');
+  })();
+
+  return dbInitPromise;
 }
 
 // Wrapper for Mongoose when activeDb is 'mongo'

@@ -57,6 +57,17 @@ const healthCheck = (req, res) => {
 app.get('/api/health', healthCheck);
 app.get('/health', healthCheck);
 
+// Ensure database is initialized before processing requests
+app.use(async (req, res, next) => {
+  try {
+    await db.init();
+    next();
+  } catch (err) {
+    console.error('Database connection initialization error:', err);
+    next(err);
+  }
+});
+
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/events', eventsRoutes);
@@ -82,7 +93,7 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Start Server
+// Start Server if executed directly (Render, standard Node, or dev)
 async function startServer() {
   try {
     await db.init();
@@ -99,4 +110,8 @@ async function startServer() {
   }
 }
 
-startServer();
+if (process.env.VERCEL !== '1' || require.main === module) {
+  startServer();
+}
+
+module.exports = app;
