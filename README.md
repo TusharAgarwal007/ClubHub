@@ -228,9 +228,77 @@ Open **`http://localhost:3000`** in your browser!
 
 ---
 
+## 🌐 Production Deployment Guide
+
+ClubHub is architected for zero-downtime, serverless frontend + containerized backend deployment using **MongoDB Atlas**, **Render**, and **Vercel**.
+
+### Step 1: Database Setup (MongoDB Atlas)
+
+1. Create a free account at [MongoDB Atlas](https://www.mongodb.com/cloud/atlas).
+2. Create a free **M0 Shared Cluster**.
+3. Under **Database Access**, create a user (e.g. `clubhub_admin`) with read/write privileges.
+4. Under **Network Access**, add `0.0.0.0/0` (Allow access from anywhere) so Render can reach the cluster.
+5. Click **Connect** → **Drivers** (Node.js) and copy your connection string:
+   ```
+   mongodb+srv://<username>:<password>@cluster0.xxxxx.mongodb.net/clubhub?retryWrites=true&w=majority
+   ```
+
+---
+
+### Step 2: Backend Deployment (Render)
+
+1. Sign in to [Render](https://render.com/) and click **New +** → **Web Service**.
+2. Connect your GitHub repository: `https://github.com/TusharAgarwal007/ClubHub`.
+3. Configure the service settings:
+   - **Name**: `clubhub-api`
+   - **Root Directory**: `server`
+   - **Environment**: `Node`
+   - **Build Command**: `npm install`
+   - **Start Command**: `npm start`
+4. Add the following **Environment Variables**:
+   | Key | Value | Description |
+   |---|---|---|
+   | `PORT` | `5000` | Server listening port |
+   | `MONGO_URI` | `mongodb+srv://...` | Your MongoDB Atlas connection string |
+   | `JWT_SECRET` | `<random_secure_key>` | Secret key for signing admin JWT tokens |
+   | `ADMIN_EMAIL` | `admin@clubhub.com` | Default admin email |
+   | `ADMIN_PASSWORD` | `admin123` | Default admin password |
+   | `CLIENT_URL` | `https://clubhub.vercel.app` | Your deployed Vercel frontend URL (for CORS) |
+   | `NODE_ENV` | `production` | Production environment flag |
+5. Click **Create Web Service**. Once deployed, copy your Render URL (e.g., `https://clubhub-api.onrender.com`).
+6. **Seed Initial Data**:
+   - In the Render dashboard, open the **Shell** tab and run:
+     ```bash
+     node src/seed.js
+     ```
+   - Verify health: `https://clubhub-api.onrender.com/api/health`
+
+---
+
+### Step 3: Frontend Deployment (Vercel)
+
+1. Sign in to [Vercel](https://vercel.com/) and click **Add New...** → **Project**.
+2. Import your GitHub repository: `https://github.com/TusharAgarwal007/ClubHub`.
+3. Configure project settings:
+   - **Root Directory**: Click *Edit* and select `client`.
+   - **Framework Preset**: `Vite` (automatically detected).
+   - **Build Command**: `npm run build`
+   - **Output Directory**: `dist`
+4. Add the **Environment Variable**:
+   | Key | Value |
+   |---|---|
+   | `VITE_API_URL` | `https://clubhub-api.onrender.com/api` |
+   *(Note: Point this to your Render service with `/api` appended).*
+5. Click **Deploy**.
+6. Vercel automatically applies the SPA rewrite rules from [`client/vercel.json`](file:///c:/Users/agarw/Desktop/codechef/client/vercel.json), ensuring seamless client-side routing on all deep links (`/events`, `/winners`, `/admin`).
+7. Update `CLIENT_URL` in your Render backend environment variables with your final Vercel domain if it differs.
+
+---
+
 ## 🎨 Design System
 
 - **Palette**: Indigo (`#4F46E5`), Violet (`#7C3AED`), Vibrant Orange (`#F97316`), Amber (`#F59E0B`), Slate Gray.
 - **Card Styling**: Rounded corners (`rounded-2xl` / `rounded-3xl`), subtle border (`border-slate-200 dark:border-slate-800`), smooth hover translate (`hover:-translate-y-1.5`) and deep shadow (`hover:shadow-card-hover`).
 - **Dark Mode**: Persisted via `ThemeContext` and `localStorage`, toggled instantly with the sun/moon icon.
 - **Accessibility**: Keyboard navigation, semantic HTML (`<main>`, `<header>`, `<footer>`, `<aside>`, `<nav>`), accessible forms with `<label>` association and ARIA descriptions.
+
