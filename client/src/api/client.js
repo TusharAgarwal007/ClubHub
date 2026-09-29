@@ -1,8 +1,11 @@
-// Dynamically resolve base API URL for Vercel production or local dev proxy
-const rawApiUrl = import.meta.env.VITE_API_URL;
-const API_BASE = rawApiUrl
-  ? (rawApiUrl.endsWith('/api') ? rawApiUrl : `${rawApiUrl.replace(/\/$/, '')}/api`)
-  : '/api';
+// Central API base URL configuration: uses import.meta.env.VITE_API_URL with fallback to http://localhost:5000
+const rawUrl = (import.meta.env.VITE_API_URL || 'http://localhost:5000').trim().replace(/\/+$/, '');
+export const API_BASE = rawUrl.endsWith('/api') ? rawUrl : `${rawUrl}/api`;
+
+export function buildApiUrl(endpoint = '') {
+  const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  return `${API_BASE}${cleanEndpoint}`;
+}
 
 function getAuthHeader() {
   const token = localStorage.getItem('clubhub_token');
@@ -10,7 +13,7 @@ function getAuthHeader() {
 }
 
 async function request(endpoint, options = {}) {
-  const url = `${API_BASE}${endpoint}`;
+  const url = buildApiUrl(endpoint);
   const headers = {
     'Content-Type': 'application/json',
     ...getAuthHeader(),

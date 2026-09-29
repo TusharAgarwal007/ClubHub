@@ -11,9 +11,14 @@ const winnersRoutes = require('./routes/winners');
 
 const app = express();
 
-// CORS configuration
+// CORS configuration supporting comma-separated CLIENT_URL and dev origins
+const clientUrls = (config.CLIENT_URL || '')
+  .split(',')
+  .map(u => u.trim().replace(/\/+$/, ''))
+  .filter(Boolean);
+
 const allowedOrigins = [
-  config.CLIENT_URL,
+  ...clientUrls,
   'http://localhost:3000',
   'http://localhost:5173',
   'http://127.0.0.1:3000',
@@ -23,7 +28,8 @@ const allowedOrigins = [
 app.use(cors({
   origin: (origin, callback) => {
     if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) {
+    const cleanOrigin = origin.replace(/\/+$/, '');
+    if (allowedOrigins.includes(cleanOrigin) || cleanOrigin.endsWith('.vercel.app')) {
       return callback(null, true);
     }
     return callback(null, true);
@@ -96,11 +102,11 @@ app.use((err, req, res, next) => {
 // Start Server if executed directly (Render, standard Node, or dev)
 async function startServer() {
   try {
-    await db.init();
-    app.listen(config.PORT, () => {
+    const port = process.env.PORT || config.PORT || 5000;
+    app.listen(port, () => {
       console.log(`===============================================`);
-      console.log(`🚀 ClubHub API Server running on port ${config.PORT}`);
-      console.log(`🌐 Health check: http://localhost:${config.PORT}/api/health`);
+      console.log(`🚀 ClubHub API Server running on port ${port}`);
+      console.log(`🌐 Health check: http://localhost:${port}/api/health`);
       console.log(`📁 Database Mode: ${db.isMongo ? 'MongoDB' : 'Persistent Storage'}`);
       console.log(`===============================================`);
     });

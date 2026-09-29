@@ -228,7 +228,7 @@ Open **`http://localhost:3000`** in your browser!
 
 ---
 
-## 🌐 Production Deployment Guide
+## 🌐 Deployment
 
 ClubHub is architected for zero-downtime, serverless frontend + containerized backend deployment using **MongoDB Atlas**, **Render**, and **Vercel**.
 
