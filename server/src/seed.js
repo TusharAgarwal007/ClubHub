@@ -3,7 +3,7 @@ const config = require('./config');
 const db = require('./db');
 const { CATEGORIES, DEPARTMENTS } = require('./constants');
 
-async function seed() {
+async function seed(exitOnComplete = true) {
   console.log('--- Starting ClubHub Database Seeding ---');
   await db.init();
 
@@ -418,10 +418,16 @@ async function seed() {
 
   console.log(`Seeded ${students.length} registrations across events.`);
   console.log('--- Database seeding completed successfully! ---');
-  process.exit(0);
+  if (exitOnComplete) {
+    process.exit(0);
+  }
 }
 
-seed().catch(err => {
-  console.error('Seeding failed with error:', err);
-  process.exit(1);
-});
+if (require.main === module) {
+  seed(true).catch(err => {
+    console.error('Seeding failed with error:', err);
+    process.exit(1);
+  });
+}
+
+module.exports = { seed };

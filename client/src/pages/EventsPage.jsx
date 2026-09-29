@@ -7,6 +7,7 @@ import FilterBar from '../components/common/FilterBar';
 import RegistrationModal from '../components/events/RegistrationModal';
 import EventDetailsModal from '../components/events/EventDetailsModal';
 import { Compass, CalendarX, RotateCcw } from 'lucide-react';
+import { dummyEvents } from '../data/dummyEvents';
 
 export default function EventsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -44,11 +45,36 @@ export default function EventsPage() {
         status: status,
         sort: sort
       });
-      if (res.success && res.events) {
+      if (res.success && Array.isArray(res.events) && res.events.length > 0) {
         setEvents(res.events);
+      } else {
+        let filtered = [...dummyEvents];
+        if (searchTerm) {
+          const q = searchTerm.toLowerCase();
+          filtered = filtered.filter(e => e.title.toLowerCase().includes(q) || e.description.toLowerCase().includes(q));
+        }
+        if (category && category !== 'All') {
+          filtered = filtered.filter(e => e.category.toLowerCase() === category.toLowerCase());
+        }
+        if (department && department !== 'All') {
+          filtered = filtered.filter(e => e.department && e.department.toLowerCase() === department.toLowerCase());
+        }
+        setEvents(filtered);
       }
     } catch (err) {
-      console.error('Failed to fetch events:', err);
+      console.warn('API unavailable, filtering fallback events:', err);
+      let filtered = [...dummyEvents];
+      if (searchTerm) {
+        const q = searchTerm.toLowerCase();
+        filtered = filtered.filter(e => e.title.toLowerCase().includes(q) || e.description.toLowerCase().includes(q));
+      }
+      if (category && category !== 'All') {
+        filtered = filtered.filter(e => e.category.toLowerCase() === category.toLowerCase());
+      }
+      if (department && department !== 'All') {
+        filtered = filtered.filter(e => e.department && e.department.toLowerCase() === department.toLowerCase());
+      }
+      setEvents(filtered);
     } finally {
       setLoading(false);
     }

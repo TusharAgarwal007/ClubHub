@@ -21,6 +21,8 @@ import {
   Layers
 } from 'lucide-react';
 
+import { dummyEvents } from '../data/dummyEvents';
+
 export default function HomePage() {
   const navigate = useNavigate();
   const [events, setEvents] = useState([]);
@@ -32,11 +34,14 @@ export default function HomePage() {
     async function loadData() {
       try {
         const res = await api.getEvents({ status: 'upcoming' });
-        if (res.success && res.events) {
+        if (res.success && Array.isArray(res.events) && res.events.length > 0) {
           setEvents(res.events);
+        } else {
+          setEvents(dummyEvents);
         }
       } catch (err) {
-        console.error('Failed to load home events:', err);
+        console.warn('API unavailable, rendering fallback events:', err);
+        setEvents(dummyEvents);
       } finally {
         setLoading(false);
       }

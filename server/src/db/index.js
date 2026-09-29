@@ -38,6 +38,21 @@ async function initDb() {
     console.log('[DB] Local persistent storage initialized.');
   })();
 
+  await dbInitPromise;
+
+  // Auto-seed if database has 0 events (e.g. freshly created MongoDB Atlas cluster)
+  try {
+    const existing = await (activeDb === 'mongo' ? mongoEvents.find({}) : store.events.find({}));
+    if (existing.length === 0) {
+      console.log('[DB] Empty database detected. Automatically seeding initial events, winners, and admin...');
+      const { seed } = require('../seed');
+      await seed(false);
+      console.log('[DB] Database auto-seeded successfully!');
+    }
+  } catch (err) {
+    console.warn('[DB] Auto-seed check notice:', err.message);
+  }
+
   return dbInitPromise;
 }
 
